@@ -446,15 +446,16 @@ async function loadVideoById(videoId) {
     document.getElementById("videoAuthor").textContent =
       data.author + (data.duration ? ` · ${formatDuration(data.duration)}` : "");
 
-    const preferOrder = ["720p", "1080p", "360p"];
+    // Default to 360p — it's a progressive (muxed) stream with audio built in.
+    // 720p/1080p are video-only and need the mux toggle for sound.
+    const preferOrder = ["360p", "720p", "1080p"];
     const defaultQ = preferOrder.find(q => currentStreams[q]) || Object.keys(currentStreams)[0];
 
     renderQualityButtons(Object.keys(currentStreams), defaultQ);
-    setVideoSource(defaultQ, currentVideoId);
+    setVideoSource(defaultQ);
 
     document.getElementById("playerCard").classList.add("visible");
     document.getElementById("player").scrollIntoView({ behavior: "smooth", block: "start" });
-    setStatus(`Playing · ${defaultQ}`);
   } catch (err) {
     setStatus("Error: " + err.message, true);
   } finally {
@@ -480,7 +481,7 @@ function renderQualityButtons(qualities, active) {
   }
 }
 
-function switchQuality(quality) {
+async function switchQuality(quality) {
   if (!currentStreams[quality]) return;
   // For 720p/1080p without mux: warn user audio won't work (video-only streams)
   if (!muxEnabled && (quality === "720p" || quality === "1080p")) {
@@ -490,31 +491,56 @@ function switchQuality(quality) {
   const video = document.getElementById("player");
   const time = video.currentTime;
   const wasPlaying = !video.paused;
-  setVideoSource(quality);
+  document.querySelectorAll(".q-btn").forEach(b => {
+    b.classList.toggle("active", b.textContent === quality);
+  });
+  await setVideoSource(quality);
   video.addEventListener("loadedmetadata", () => {
     video.currentTime = time;
     if (wasPlaying) video.play().catch(() => {});
   }, { once: true });
-  document.querySelectorAll(".q-btn").forEach(b => {
-    b.classList.toggle("active", b.textContent === quality);
-  });
-  setStatus(`Playing · ${quality}${muxEnabled && (quality === "720p" || quality === "1080p") ? " (muxed)" : ""}`);
 }
 
-function setVideoSource(quality) {
+// Poll /prepare until the muxed file is ready (iPad Safari needs a finished,
+// seekable file — it can't play a live stream). Shows progress meanwhile.
+async function prepareMux(quality) {
+  const url = `${WORKER_URL}/prepare?v=${currentVideoId}&q=${quality}`;
+  const started = Date.now();
+  while (true) {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.ready) return true;
+    if (data.error) throw new Error(data.error);
+    const secs = Math.round((Date.now() - started) / 1000);
+    setStatus(`<span class="spinner"></span>Preparing ${quality} with audio… ${secs}s`);
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
+
+async function setVideoSource(quality) {
   const stream = currentStreams[quality];
   const video = document.getElementById("player");
   const useMux = muxEnabled && (quality === "720p" || quality === "1080p");
   if (useMux) {
+    try {
+      await prepareMux(quality);
+    } catch (err) {
+      setStatus("Mux failed: " + err.message, true);
+      return;
+    }
     video.src = `${WORKER_URL}/stream?v=${currentVideoId}&q=${quality}`;
     video.type = "video/mp4";
+    video.load();
+    setStatus(`Playing · ${quality} (muxed)`);
   } else {
     video.src = stream.proxyUrl;
     video.type = stream.mimeType;
+    video.load();
+    setStatus(`Playing · ${quality}`);
   }
 }
 
-function onMuxToggle() {
+async function onMuxToggle() {
   const checkbox = document.getElementById("muxToggle");
   const label = document.getElementById("muxLabel");
   muxEnabled = checkbox.checked;
@@ -531,7 +557,7 @@ function onMuxToggle() {
       const video = document.getElementById("player");
       const time = video.currentTime;
       const wasPlaying = !video.paused;
-      setVideoSource(activeQ);
+      await setVideoSource(activeQ);
       video.addEventListener("loadedmetadata", () => {
         video.currentTime = time;
         if (wasPlaying) video.play().catch(() => {});
