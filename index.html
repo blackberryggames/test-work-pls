@@ -185,7 +185,45 @@
   .video-info .title { font-size: 15px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
   .video-info .author { font-size: 12px; color: var(--muted); }
 
-  .quality-row { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+  .quality-row { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
+
+  /* Mux toggle */
+  .mux-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    margin-left: 4px;
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+  }
+
+  .mux-toggle input { display: none; }
+
+  .toggle-track {
+    width: 30px; height: 16px;
+    background: var(--border);
+    border-radius: 8px;
+    position: relative;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-track::after {
+    content: "";
+    position: absolute;
+    left: 2px; top: 2px;
+    width: 12px; height: 12px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: left .2s, background .2s;
+  }
+
+  .mux-toggle input:checked + .toggle-track { background: var(--accent); }
+  .mux-toggle input:checked + .toggle-track::after { left: 16px; background: #fff; }
 
   .q-btn {
     background: var(--border);
@@ -248,7 +286,13 @@
         <div class="title" id="videoTitle"></div>
         <div class="author" id="videoAuthor"></div>
       </div>
-      <div class="quality-row" id="qualityRow"></div>
+      <div class="quality-row" id="qualityRow">
+        <label class="mux-toggle" title="Enable server-side mux for 720p/1080p with audio">
+          <input type="checkbox" id="muxToggle" onchange="onMuxToggle()">
+          <span class="toggle-track"></span>
+          <span id="muxLabel">mux off</span>
+        </label>
+      </div>
     </div>
   </div>
 
@@ -378,6 +422,8 @@ function parseDuration(iso) {
 
 // ── Load & play a video ───────────────────────────────────────────────────────
 let currentStreams = {};
+let currentVideoId = null;
+let muxEnabled = false;
 
 async function loadVideoById(videoId) {
   document.getElementById("playerCard").classList.remove("visible");
@@ -394,6 +440,7 @@ async function loadVideoById(videoId) {
     }
 
     currentStreams = data.streams;
+    currentVideoId = videoId;
 
     document.getElementById("videoTitle").textContent = data.title;
     document.getElementById("videoAuthor").textContent =
@@ -403,7 +450,7 @@ async function loadVideoById(videoId) {
     const defaultQ = preferOrder.find(q => currentStreams[q]) || Object.keys(currentStreams)[0];
 
     renderQualityButtons(Object.keys(currentStreams), defaultQ);
-    setVideoSource(defaultQ);
+    setVideoSource(defaultQ, currentVideoId);
 
     document.getElementById("playerCard").classList.add("visible");
     document.getElementById("player").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -417,20 +464,29 @@ async function loadVideoById(videoId) {
 
 function renderQualityButtons(qualities, active) {
   const row = document.getElementById("qualityRow");
-  row.innerHTML = "";
+  // Clear only the q-btns, keep the toggle label
+  row.querySelectorAll(".q-btn").forEach(b => b.remove());
+  const toggle = row.querySelector(".mux-toggle");
   const order = ["360p", "720p", "1080p"];
   const sorted = order.filter(q => qualities.includes(q));
   for (const q of sorted) {
     const btn = document.createElement("button");
     btn.className = "q-btn" + (q === active ? " active" : "");
     btn.textContent = q;
+    // grey out 720p/1080p when mux is off
+    if (!muxEnabled && (q === "720p" || q === "1080p")) btn.style.opacity = "0.4";
     btn.onclick = () => switchQuality(q);
-    row.appendChild(btn);
+    row.insertBefore(btn, toggle);
   }
 }
 
 function switchQuality(quality) {
   if (!currentStreams[quality]) return;
+  // For 720p/1080p without mux: warn user audio won't work (video-only streams)
+  if (!muxEnabled && (quality === "720p" || quality === "1080p")) {
+    setStatus(`⚠️ ${quality} is video-only without mux — enable mux toggle for audio`, true);
+    return;
+  }
   const video = document.getElementById("player");
   const time = video.currentTime;
   const wasPlaying = !video.paused;
@@ -442,14 +498,46 @@ function switchQuality(quality) {
   document.querySelectorAll(".q-btn").forEach(b => {
     b.classList.toggle("active", b.textContent === quality);
   });
-  setStatus(`Playing · ${quality}`);
+  setStatus(`Playing · ${quality}${muxEnabled && (quality === "720p" || quality === "1080p") ? " (muxed)" : ""}`);
 }
 
 function setVideoSource(quality) {
   const stream = currentStreams[quality];
   const video = document.getElementById("player");
-  video.src = stream.proxyUrl;
-  video.type = stream.mimeType;
+  const useMux = muxEnabled && (quality === "720p" || quality === "1080p");
+  if (useMux) {
+    video.src = `${WORKER_URL}/stream?v=${currentVideoId}&q=${quality}`;
+    video.type = "video/mp4";
+  } else {
+    video.src = stream.proxyUrl;
+    video.type = stream.mimeType;
+  }
+}
+
+function onMuxToggle() {
+  const checkbox = document.getElementById("muxToggle");
+  const label = document.getElementById("muxLabel");
+  muxEnabled = checkbox.checked;
+  label.textContent = muxEnabled ? "mux on" : "mux off";
+
+  // Re-render quality buttons to update greyed-out state
+  if (currentVideoId) {
+    const activeBtn = document.querySelector(".q-btn.active");
+    const activeQ = activeBtn ? activeBtn.textContent : null;
+    renderQualityButtons(Object.keys(currentStreams), activeQ);
+
+    // If currently playing 720p/1080p, reload with the right source
+    if (activeQ && (activeQ === "720p" || activeQ === "1080p")) {
+      const video = document.getElementById("player");
+      const time = video.currentTime;
+      const wasPlaying = !video.paused;
+      setVideoSource(activeQ);
+      video.addEventListener("loadedmetadata", () => {
+        video.currentTime = time;
+        if (wasPlaying) video.play().catch(() => {});
+      }, { once: true });
+    }
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
