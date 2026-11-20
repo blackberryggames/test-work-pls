@@ -463,6 +463,12 @@ async function loadVideoById(videoId) {
   }
 }
 
+// A quality needs the mux path only if its stream has no audio (adaptive).
+function needsMux(quality) {
+  const s = currentStreams[quality];
+  return s && s.hasAudio === false;
+}
+
 function renderQualityButtons(qualities, active) {
   const row = document.getElementById("qualityRow");
   // Clear only the q-btns, keep the toggle label
@@ -474,8 +480,8 @@ function renderQualityButtons(qualities, active) {
     const btn = document.createElement("button");
     btn.className = "q-btn" + (q === active ? " active" : "");
     btn.textContent = q;
-    // grey out 720p/1080p when mux is off
-    if (!muxEnabled && (q === "720p" || q === "1080p")) btn.style.opacity = "0.4";
+    // grey out only audio-less (adaptive) qualities when mux is off
+    if (needsMux(q) && !muxEnabled) btn.style.opacity = "0.4";
     btn.onclick = () => switchQuality(q);
     row.insertBefore(btn, toggle);
   }
@@ -483,9 +489,9 @@ function renderQualityButtons(qualities, active) {
 
 async function switchQuality(quality) {
   if (!currentStreams[quality]) return;
-  // For 720p/1080p without mux: warn user audio won't work (video-only streams)
-  if (!muxEnabled && (quality === "720p" || quality === "1080p")) {
-    setStatus(`⚠️ ${quality} is video-only without mux — enable mux toggle for audio`, true);
+  // Only warn for audio-less (adaptive) streams when mux is off
+  if (needsMux(quality) && !muxEnabled) {
+    setStatus(`⚠️ ${quality} is video-only — enable the mux toggle for audio`, true);
     return;
   }
   const video = document.getElementById("player");
@@ -520,7 +526,9 @@ async function prepareMux(quality) {
 async function setVideoSource(quality) {
   const stream = currentStreams[quality];
   const video = document.getElementById("player");
-  const useMux = muxEnabled && (quality === "720p" || quality === "1080p");
+  // Mux only when the stream genuinely has no audio (adaptive) AND mux is on.
+  // Progressive streams (itag 18/22) have audio and play directly.
+  const useMux = muxEnabled && needsMux(quality);
   if (useMux) {
     try {
       await prepareMux(quality);
@@ -552,8 +560,8 @@ async function onMuxToggle() {
     const activeQ = activeBtn ? activeBtn.textContent : null;
     renderQualityButtons(Object.keys(currentStreams), activeQ);
 
-    // If currently playing 720p/1080p, reload with the right source
-    if (activeQ && (activeQ === "720p" || activeQ === "1080p")) {
+    // If currently on an audio-less quality, reload with the right source
+    if (activeQ && needsMux(activeQ)) {
       const video = document.getElementById("player");
       const time = video.currentTime;
       const wasPlaying = !video.paused;
