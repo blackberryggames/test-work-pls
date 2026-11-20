@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YT Proxy Player</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #ff4444;
+    --text: #e8e8e8;
+    --muted: #888;
+    --radius: 8px;
+    --font: 'Inter', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .badge {
+    font-size: 10px;
+    background: var(--border);
+    color: var(--muted);
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  main {
+    width: 100%;
+    max-width: 900px;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Search */
+  .search-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 12px 16px;
+    font-size: 15px;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color .15s;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: opacity .15s;
+    white-space: nowrap;
+  }
+
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: default; }
+
+  /* Status */
+  .status {
+    font-size: 13px;
+    color: var(--muted);
+    min-height: 18px;
+  }
+
+  .status.error { color: var(--accent); }
+
+  /* Player card */
+  .player-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+  }
+
+  .player-card.visible { display: block; }
+
+  video {
+    width: 100%;
+    display: block;
+    background: #000;
+    max-height: 500px;
+  }
+
+  .player-meta {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .video-info .title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .video-info .author {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Quality buttons */
+  .quality-row {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .q-btn {
+    background: var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    transition: background .15s, color .15s;
+  }
+
+  .q-btn:hover { background: #333; color: var(--text); }
+  .q-btn.active { background: var(--accent); color: #fff; }
+
+  /* Formats table */
+  .formats-section {
+    display: none;
+  }
+
+  .formats-section.visible { display: block; }
+
+  .formats-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stream-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stream-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stream-item .qlabel {
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 55px;
+  }
+
+  .stream-item .mime {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: monospace;
+    flex: 1;
+  }
+
+  .stream-item .copy-btn {
+    background: var(--border);
+    color: var(--text);
+    padding: 5px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+
+  .stream-item .copy-btn:hover { background: #333; }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Config note */
+  .config-note {
+    background: #1a1500;
+    border: 1px solid #3a2e00;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #c9a800;
+    line-height: 1.6;
+  }
+
+  .config-note code {
+    background: rgba(0,0,0,.3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  footer {
+    margin-top: auto;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">yt<span>proxy</span></div>
+  <span class="badge">CF Worker</span>
+</header>
+
+<main>
+
+  <!-- Config notice -->
+  <div class="config-note" id="configNote">
+    Set your worker URL: edit <code>WORKER_URL</code> at the top of this page's script, or add
+    <code>?worker=https://soft-darkness-315e.blackberryggames.workers.dev</code> to the URL.
+  </div>
+
+  <!-- Search -->
+  <div class="search-row">
+    <input type="text" id="vidInput" placeholder="YouTube URL or video ID (e.g. dQw4w9WgXcQ)" />
+    <button id="loadBtn" onclick="loadVideo()">Load</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <!-- Player -->
+  <div class="player-card" id="playerCard">
+    <video id="player" controls></video>
+    <div class="player-meta">
+      <div class="video-info">
+        <div class="title" id="videoTitle"></div>
+        <div class="author" id="videoAuthor"></div>
+      </div>
+      <div class="quality-row" id="qualityRow"></div>
+    </div>
+  </div>
+
+  <!-- Stream list -->
+  <div class="formats-section" id="formatsSection">
+    <h3>Available Streams</h3>
+    <div class="stream-list" id="streamList"></div>
+  </div>
+
+</main>
+
+<footer>Streams proxied via Cloudflare Workers · no data stored</footer>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// Change this to your deployed worker URL.
+// Can also be overridden via ?worker=https://... in the page URL.
+let WORKER_URL = "https://your-worker.workers.dev";
+// ─────────────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("worker")) WORKER_URL = params.get("worker").replace(/\/$/, "");
+
+  // Hide config note if worker is set via URL param
+  if (params.get("worker")) {
+    document.getElementById("configNote").style.display = "none";
+  }
+
+  // Allow Enter key in input
+  document.getElementById("vidInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") loadVideo();
+  });
+
+  // Pre-fill from ?v= param
+  if (params.get("v")) {
+    document.getElementById("vidInput").value = params.get("v");
+    loadVideo();
+  }
+})();
+
+function extractVideoId(input) {
+  input = input.trim();
+  // Plain 11-char ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+  try {
+    const u = new URL(input);
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1, 12);
+    return u.searchParams.get("v") || null;
+  } catch { return null; }
+}
+
+function setStatus(msg, isError = false) {
+  const el = document.getElementById("status");
+  el.innerHTML = msg;
+  el.className = "status" + (isError ? " error" : "");
+}
+
+let currentStreams = {};
+let currentQuality = null;
+
+async function loadVideo() {
+  const raw = document.getElementById("vidInput").value;
+  const videoId = extractVideoId(raw);
+
+  if (!videoId) {
+    setStatus("Couldn't parse a video ID from that input.", true);
+    return;
+  }
+
+  document.getElementById("loadBtn").disabled = true;
+  setStatus('<span class="spinner"></span>Fetching video info…');
+  document.getElementById("playerCard").classList.remove("visible");
+  document.getElementById("formatsSection").classList.remove("visible");
+
+  try {
+    const res = await fetch(`${WORKER_URL}/info?v=${videoId}`);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+    if (!data.streams || Object.keys(data.streams).length === 0) {
+      throw new Error("No playable streams found for this video.");
+    }
+
+    currentStreams = data.streams;
+
+    // Render video info
+    document.getElementById("videoTitle").textContent = data.title;
+    document.getElementById("videoAuthor").textContent = data.author +
+      (data.duration ? ` · ${formatDuration(data.duration)}` : "");
+
+    // Pick best available default quality
+    const preferOrder = ["720p", "1080p", "360p"];
+    const defaultQ = preferOrder.find(q => currentStreams[q]) || Object.keys(currentStreams)[0];
+
+    renderQualityButtons(Object.keys(currentStreams), defaultQ);
+    setVideoSource(defaultQ);
+    renderStreamList(data.streams);
+
+    document.getElementById("playerCard").classList.add("visible");
+    document.getElementById("formatsSection").classList.add("visible");
+    setStatus(`Loaded · proxy at ${WORKER_URL}`);
+  } catch (err) {
+    setStatus("Error: " + err.message, true);
+  } finally {
+    document.getElementById("loadBtn").disabled = false;
+  }
+}
+
+function renderQualityButtons(qualities, active) {
+  const row = document.getElementById("qualityRow");
+  row.innerHTML = "";
+  const order = ["360p", "720p", "1080p"];
+  const sorted = order.filter(q => qualities.includes(q));
+
+  for (const q of sorted) {
+    const btn = document.createElement("button");
+    btn.className = "q-btn" + (q === active ? " active" : "");
+    btn.textContent = q;
+    btn.onclick = () => switchQuality(q);
+    row.appendChild(btn);
+  }
+}
+
+function switchQuality(quality) {
+  if (!currentStreams[quality]) return;
+
+  // Remember playback position
+  const video = document.getElementById("player");
+  const time = video.currentTime;
+  const wasPlaying = !video.paused;
+
+  setVideoSource(quality);
+
+  // Restore position after source change
+  video.addEventListener("loadedmetadata", () => {
+    video.currentTime = time;
+    if (wasPlaying) video.play().catch(() => {});
+  }, { once: true });
+
+  // Update active button
+  document.querySelectorAll(".q-btn").forEach(b => {
+    b.classList.toggle("active", b.textContent === quality);
+  });
+
+  currentQuality = quality;
+}
+
+function setVideoSource(quality) {
+  const stream = currentStreams[quality];
+  const video = document.getElementById("player");
+  video.src = stream.proxyUrl;
+  video.type = stream.mimeType;
+  currentQuality = quality;
+}
+
+function renderStreamList(streams) {
+  const list = document.getElementById("streamList");
+  list.innerHTML = "";
+
+  for (const [quality, s] of Object.entries(streams)) {
+    const item = document.createElement("div");
+    item.className = "stream-item";
+    item.innerHTML = `
+      <span class="qlabel">${s.qualityLabel || quality}</span>
+      <span class="mime">${s.mimeType}</span>
+      <button class="copy-btn" data-url="${s.proxyUrl}" onclick="copyUrl(this)">Copy proxy URL</button>
+    `;
+    list.appendChild(item);
+  }
+}
+
+function copyUrl(btn) {
+  navigator.clipboard.writeText(btn.dataset.url).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
+</script>
+</body>
+</html>
