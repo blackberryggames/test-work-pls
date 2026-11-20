@@ -37,12 +37,7 @@
     gap: 10px;
   }
 
-  .logo {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-  }
-
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
   .logo span { color: var(--accent); }
 
   .badge {
@@ -58,7 +53,7 @@
 
   main {
     width: 100%;
-    max-width: 900px;
+    max-width: 960px;
     padding: 32px 20px;
     display: flex;
     flex-direction: column;
@@ -105,13 +100,59 @@
   button:disabled { opacity: 0.4; cursor: default; }
 
   /* Status */
-  .status {
-    font-size: 13px;
-    color: var(--muted);
-    min-height: 18px;
+  .status { font-size: 13px; color: var(--muted); min-height: 18px; }
+  .status.error { color: var(--accent); }
+
+  /* Search results grid */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
   }
 
-  .status.error { color: var(--accent); }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .15s, transform .1s;
+  }
+
+  .result-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .result-card img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+    background: #111;
+  }
+
+  .result-card .card-info {
+    padding: 10px 12px;
+  }
+
+  .result-card .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+
+  .result-card .card-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
 
   /* Player card */
   .player-card {
@@ -141,25 +182,10 @@
     flex-wrap: wrap;
   }
 
-  .video-info .title {
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.4;
-    margin-bottom: 4px;
-  }
+  .video-info .title { font-size: 15px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+  .video-info .author { font-size: 12px; color: var(--muted); }
 
-  .video-info .author {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  /* Quality buttons */
-  .quality-row {
-    display: flex;
-    gap: 6px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-  }
+  .quality-row { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 
   .q-btn {
     background: var(--border);
@@ -174,68 +200,10 @@
   .q-btn:hover { background: #333; color: var(--text); }
   .q-btn.active { background: var(--accent); color: #fff; }
 
-  /* Formats table */
-  .formats-section {
-    display: none;
-  }
-
-  .formats-section.visible { display: block; }
-
-  .formats-section h3 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .stream-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .stream-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .stream-item .qlabel {
-    font-weight: 700;
-    font-size: 14px;
-    min-width: 55px;
-  }
-
-  .stream-item .mime {
-    font-size: 11px;
-    color: var(--muted);
-    font-family: monospace;
-    flex: 1;
-  }
-
-  .stream-item .copy-btn {
-    background: var(--border);
-    color: var(--text);
-    padding: 5px 12px;
-    font-size: 12px;
-    border-radius: 4px;
-  }
-
-  .stream-item .copy-btn:hover { background: #333; }
-
   /* Spinner */
   .spinner {
     display: inline-block;
-    width: 14px;
-    height: 14px;
+    width: 14px; height: 14px;
     border: 2px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
@@ -245,25 +213,6 @@
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Config note */
-  .config-note {
-    background: #1a1500;
-    border: 1px solid #3a2e00;
-    border-radius: var(--radius);
-    padding: 12px 16px;
-    font-size: 13px;
-    color: #c9a800;
-    line-height: 1.6;
-  }
-
-  .config-note code {
-    background: rgba(0,0,0,.3);
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: 12px;
-  }
 
   footer {
     margin-top: auto;
@@ -278,21 +227,15 @@
 
 <header>
   <div class="logo">yt<span>proxy</span></div>
-  <span class="badge">CF Worker</span>
+  <span class="badge">Fly.io</span>
 </header>
 
 <main>
 
-  <!-- Config notice -->
-  <div class="config-note" id="configNote">
-    Set your worker URL: edit <code>WORKER_URL</code> at the top of this page's script, or add
-    <code>?worker=https://stops-sjdng.fly.dev</code> to the URL.
-  </div>
-
   <!-- Search -->
   <div class="search-row">
-    <input type="text" id="vidInput" placeholder="YouTube URL or video ID (e.g. dQw4w9WgXcQ)" />
-    <button id="loadBtn" onclick="loadVideo()">Load</button>
+    <input type="text" id="searchInput" placeholder="Search YouTube or paste a URL / video ID…" />
+    <button id="searchBtn" onclick="handleSearch()">Search</button>
   </div>
 
   <div class="status" id="status"></div>
@@ -309,47 +252,37 @@
     </div>
   </div>
 
-  <!-- Stream list -->
-  <div class="formats-section" id="formatsSection">
-    <h3>Available Streams</h3>
-    <div class="stream-list" id="streamList"></div>
-  </div>
+  <!-- Search results -->
+  <div class="results-grid" id="resultsGrid"></div>
 
 </main>
 
-<footer>Streams proxied via Cloudflare Workers · no data stored</footer>
+<footer>Streams proxied via Fly.io · search via Invidious · no data stored</footer>
 
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
-// Change this to your deployed worker URL.
-// Can also be overridden via ?worker=https://... in the page URL.
-let WORKER_URL = "https://stops-sjdng.fly.dev";
-// ─────────────────────────────────────────────────────────────────────────────
+const WORKER_URL = "https://stops-sjdng.fly.dev";
+
+// Invidious instances to try in order
+const INVIDIOUS_INSTANCES = [
+  "https://invidious.snopyta.org",
+  "https://yewtu.be",
+  "https://inv.nadeko.net",
+  "https://invidious.nerdvpn.de",
+];
 
 (function init() {
   const params = new URLSearchParams(location.search);
-  if (params.get("worker")) WORKER_URL = params.get("worker").replace(/\/$/, "");
-
-  // Hide config note if worker is set via URL param
-  if (params.get("worker")) {
-    document.getElementById("configNote").style.display = "none";
-  }
-
-  // Allow Enter key in input
-  document.getElementById("vidInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") loadVideo();
+  document.getElementById("searchInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") handleSearch();
   });
-
-  // Pre-fill from ?v= param
   if (params.get("v")) {
-    document.getElementById("vidInput").value = params.get("v");
-    loadVideo();
+    document.getElementById("searchInput").value = params.get("v");
+    loadVideoById(params.get("v"));
   }
 })();
 
 function extractVideoId(input) {
   input = input.trim();
-  // Plain 11-char ID
   if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
   try {
     const u = new URL(input);
@@ -364,22 +297,83 @@ function setStatus(msg, isError = false) {
   el.className = "status" + (isError ? " error" : "");
 }
 
-let currentStreams = {};
-let currentQuality = null;
-
-async function loadVideo() {
-  const raw = document.getElementById("vidInput").value;
+// Decide: direct video load or search
+function handleSearch() {
+  const raw = document.getElementById("searchInput").value.trim();
+  if (!raw) return;
   const videoId = extractVideoId(raw);
+  if (videoId) {
+    loadVideoById(videoId);
+  } else {
+    searchVideos(raw);
+  }
+}
 
-  if (!videoId) {
-    setStatus("Couldn't parse a video ID from that input.", true);
+// ── Search via Invidious ──────────────────────────────────────────────────────
+async function searchVideos(query) {
+  document.getElementById("searchBtn").disabled = true;
+  document.getElementById("resultsGrid").innerHTML = "";
+  document.getElementById("playerCard").classList.remove("visible");
+  setStatus('<span class="spinner"></span>Searching…');
+
+  let results = null;
+  for (const instance of INVIDIOUS_INSTANCES) {
+    try {
+      const res = await fetch(
+        `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video&fields=videoId,title,author,lengthSeconds,videoThumbnails`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (!res.ok) continue;
+      results = await res.json();
+      if (Array.isArray(results) && results.length > 0) break;
+    } catch { continue; }
+  }
+
+  document.getElementById("searchBtn").disabled = false;
+
+  if (!results || results.length === 0) {
+    setStatus("No results found. Try a different query.", true);
     return;
   }
 
-  document.getElementById("loadBtn").disabled = true;
-  setStatus('<span class="spinner"></span>Fetching video info…');
+  setStatus(`${results.length} results`);
+  renderResults(results);
+}
+
+function renderResults(results) {
+  const grid = document.getElementById("resultsGrid");
+  grid.innerHTML = "";
+
+  for (const v of results) {
+    // Pick best thumbnail
+    const thumb = (v.videoThumbnails || [])
+      .find(t => t.quality === "medium" || t.quality === "default")
+      ?.url || `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`;
+
+    const card = document.createElement("div");
+    card.className = "result-card";
+    card.innerHTML = `
+      <img src="${thumb}" alt="" loading="lazy" onerror="this.src='https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg'">
+      <div class="card-info">
+        <div class="card-title">${escHtml(v.title)}</div>
+        <div class="card-meta">
+          <span>${escHtml(v.author)}</span>
+          <span>${formatDuration(v.lengthSeconds)}</span>
+        </div>
+      </div>
+    `;
+    card.onclick = () => loadVideoById(v.videoId);
+    grid.appendChild(card);
+  }
+}
+
+// ── Load & play a video ───────────────────────────────────────────────────────
+let currentStreams = {};
+
+async function loadVideoById(videoId) {
   document.getElementById("playerCard").classList.remove("visible");
-  document.getElementById("formatsSection").classList.remove("visible");
+  setStatus('<span class="spinner"></span>Fetching streams…');
+  document.getElementById("searchBtn").disabled = true;
 
   try {
     const res = await fetch(`${WORKER_URL}/info?v=${videoId}`);
@@ -392,26 +386,23 @@ async function loadVideo() {
 
     currentStreams = data.streams;
 
-    // Render video info
     document.getElementById("videoTitle").textContent = data.title;
-    document.getElementById("videoAuthor").textContent = data.author +
-      (data.duration ? ` · ${formatDuration(data.duration)}` : "");
+    document.getElementById("videoAuthor").textContent =
+      data.author + (data.duration ? ` · ${formatDuration(data.duration)}` : "");
 
-    // Pick best available default quality
     const preferOrder = ["720p", "1080p", "360p"];
     const defaultQ = preferOrder.find(q => currentStreams[q]) || Object.keys(currentStreams)[0];
 
     renderQualityButtons(Object.keys(currentStreams), defaultQ);
     setVideoSource(defaultQ);
-    renderStreamList(data.streams);
 
     document.getElementById("playerCard").classList.add("visible");
-    document.getElementById("formatsSection").classList.add("visible");
-    setStatus(`Loaded · proxy at ${WORKER_URL}`);
+    document.getElementById("player").scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus(`Playing · ${defaultQ}`);
   } catch (err) {
     setStatus("Error: " + err.message, true);
   } finally {
-    document.getElementById("loadBtn").disabled = false;
+    document.getElementById("searchBtn").disabled = false;
   }
 }
 
@@ -420,7 +411,6 @@ function renderQualityButtons(qualities, active) {
   row.innerHTML = "";
   const order = ["360p", "720p", "1080p"];
   const sorted = order.filter(q => qualities.includes(q));
-
   for (const q of sorted) {
     const btn = document.createElement("button");
     btn.className = "q-btn" + (q === active ? " active" : "");
@@ -432,26 +422,18 @@ function renderQualityButtons(qualities, active) {
 
 function switchQuality(quality) {
   if (!currentStreams[quality]) return;
-
-  // Remember playback position
   const video = document.getElementById("player");
   const time = video.currentTime;
   const wasPlaying = !video.paused;
-
   setVideoSource(quality);
-
-  // Restore position after source change
   video.addEventListener("loadedmetadata", () => {
     video.currentTime = time;
     if (wasPlaying) video.play().catch(() => {});
   }, { once: true });
-
-  // Update active button
   document.querySelectorAll(".q-btn").forEach(b => {
     b.classList.toggle("active", b.textContent === quality);
   });
-
-  currentQuality = quality;
+  setStatus(`Playing · ${quality}`);
 }
 
 function setVideoSource(quality) {
@@ -459,39 +441,20 @@ function setVideoSource(quality) {
   const video = document.getElementById("player");
   video.src = stream.proxyUrl;
   video.type = stream.mimeType;
-  currentQuality = quality;
 }
 
-function renderStreamList(streams) {
-  const list = document.getElementById("streamList");
-  list.innerHTML = "";
-
-  for (const [quality, s] of Object.entries(streams)) {
-    const item = document.createElement("div");
-    item.className = "stream-item";
-    item.innerHTML = `
-      <span class="qlabel">${s.qualityLabel || quality}</span>
-      <span class="mime">${s.mimeType}</span>
-      <button class="copy-btn" data-url="${s.proxyUrl}" onclick="copyUrl(this)">Copy proxy URL</button>
-    `;
-    list.appendChild(item);
-  }
-}
-
-function copyUrl(btn) {
-  navigator.clipboard.writeText(btn.dataset.url).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = "Copied!";
-    setTimeout(() => btn.textContent = orig, 1500);
-  });
-}
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDuration(seconds) {
+  if (!seconds) return "";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
   if (h > 0) return `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   return `${m}:${String(s).padStart(2,"0")}`;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 </script>
 </body>
